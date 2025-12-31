@@ -148,35 +148,38 @@
       align-items: flex-end;
     }
 
-    textarea {
-      flex: 1;
-      min-height: 44px;
-      max-height: 120px;
-      resize: none;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      padding: 12px 12px;
-      font-size: 16px;
-      outline: none;
-      background: #fff;
-    }
+  textarea {
+    flex: 1;
+    height: 48px;          /* ✅ 핵심 */
+    min-height: 48px;
+    max-height: 120px;
+
+    padding: 12px;
+    resize: none;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    font-size: 16px;
+    outline: none;
+    background: #fff;
+  }
 
     textarea:focus {
       border-color: #b8c7ff;
       box-shadow: 0 0 0 4px rgba(184,199,255,.35);
     }
 
-    button {
-      border: 0;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      background: #111827;
-      color: #fff;
-      min-width: 72px;
-    }
+/* 전송 버튼 */
+  button {
+    height: 48px;          /* ✅ textarea와 동일 */
+    padding: 0 16px;       /* 세로 padding 제거 */
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #111827;
+    color: #fff;
+    min-width: 72px;
+  }
 
     button:disabled {
       opacity: .55;
