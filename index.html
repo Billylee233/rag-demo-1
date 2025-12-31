@@ -85,7 +85,7 @@
     .row.user { justify-content: flex-end; }
     .row.bot { justify-content: flex-start; }
 
-    /* ✅ max-width 제한을 msg가 아니라 bubble에서만 제어 */
+    /* 메시지 컨테이너는 전체폭을 쓰되, 말풍선은 내용만큼 */
     .msg {
       display: flex;
       flex-direction: column;
@@ -93,9 +93,12 @@
       width: 100%;
     }
     .row.user .msg { align-items: flex-end; }
+    .row.bot .msg { align-items: flex-start; }
 
-    /* ✅ 말풍선 폭을 충분히 넓히고, 한글 줄바꿈 최적화 */
+    /* ✅ 말풍선: 텍스트 길이에 맞게(핵심) */
     .bubble {
+      display: inline-block;
+      width: fit-content;
       max-width: 90%;
       padding: 10px 12px;
       border-radius: var(--radius);
@@ -105,8 +108,8 @@
       line-height: 1.4;
       box-shadow: var(--shadow);
 
-      word-break: keep-all;      /* 한글 단어 중간 줄바꿈 최소화 */
-      overflow-wrap: break-word; /* 긴 문자열/URL은 적절히 줄바꿈 */
+      word-break: keep-all;
+      overflow-wrap: break-word;
     }
 
     .row.user .bubble {
@@ -186,7 +189,6 @@
       textarea { font-size: 16px; }
       button { min-width: 64px; padding: 12px 12px; }
 
-      /* ✅ 모바일에서는 말풍선을 더 넓게 */
       .bubble { max-width: 94%; }
     }
   </style>
