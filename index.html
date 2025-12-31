@@ -57,23 +57,6 @@
     }
     .status { margin-top: 6px; font-size: 13px; color: var(--muted); }
 
-    .tools{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .btnGhost{
-      border:1px solid var(--line);
-      background:#fff;
-      color:#111827;
-      padding:10px 12px;
-      border-radius:12px;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow: var(--shadow);
-      white-space:nowrap;
-    }
-
     main {
       flex: 1;
       overflow: auto;
@@ -93,7 +76,8 @@
     .bubble {
       display: inline-block;
       width: auto;
-      max-width: min(78ch, 92%);
+      /* ✅ 수정 포인트 2: 말풍선 너비를 유동적으로 확장 */
+      max-width: 92%; 
       padding: 10px 12px;
       border-radius: var(--radius);
       border: 1px solid var(--bot-line);
@@ -101,13 +85,14 @@
       white-space: pre-wrap;
       line-height: 1.35;
       box-shadow: var(--shadow);
-      word-break: keep-all;
+      word-break: break-all; /* ✅ 한글 끊김 방지 */
       overflow-wrap: anywhere;
     }
 
     .row.user .bubble {
       background: var(--user-bg);
       border-color: var(--user-line);
+      text-align: left; /* ✅ 긴 문장일 때 왼쪽 정렬 */
     }
 
     .meta { margin-top: 4px; font-size: 11px; color: var(--muted); }
@@ -171,7 +156,6 @@
       .bubble { max-width: 94%; }
       textarea { font-size: 16px; }
       button.send { min-width: 64px; padding: 12px 12px; }
-      .btnGhost{ padding:10px 10px; }
     }
   </style>
 </head>
@@ -185,10 +169,7 @@
             <h1 class="title">사내 문서 검색 챗봇</h1>
             <div class="status" id="status">대기 중…</div>
           </div>
-          <div class="tools">
-            <button class="btnGhost" id="clear">대화 삭제</button>
           </div>
-        </div>
       </div>
     </header>
 
@@ -204,7 +185,7 @@
     <div class="composer">
       <div class="wrap">
         <div class="bar">
-          <textarea id="q" placeholder="질문을 입력하세요 (Enter=전송 / Shift+Enter=줄바꿈)"></textarea>
+          <textarea id="q" placeholder="질문을 입력하세요"></textarea>
           <button class="send" id="send">전송</button>
         </div>
       </div>
@@ -212,16 +193,10 @@
   </div>
 
   <script>
-    // ✅ n8n Production Webhook URL
     const WEBHOOK_URL = "https://billylee.app.n8n.cloud/webhook/ask";
-
-    // ✅ 저장 키 (로컬 UI용)
     const STORAGE_KEY = "rag_demo_chat_v1";
-
-    // ✅ 대화ID: DB 저장용 (브라우저마다 고정)
     const CONV_KEY = "conversation_id";
-    const conversationId =
-      localStorage.getItem(CONV_KEY) ||
+    const conversationId = localStorage.getItem(CONV_KEY) || 
       ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()));
     localStorage.setItem(CONV_KEY, conversationId);
 
@@ -231,10 +206,7 @@
     const qEl = document.getElementById("q");
     const sendBtn = document.getElementById("send");
     const statusEl = document.getElementById("status");
-    const clearBtn = document.getElementById("clear");
 
-    // ✅ 메모리(화면)에서 관리할 채팅 배열
-    // item = { role: "user"|"bot", text: string, ts: number }
     let chats = [];
 
     function formatTime(ts) {
@@ -251,19 +223,12 @@
     function loadChats() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-        return parsed;
-      } catch {
-        return [];
-      }
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
     }
 
     function scrollToBottom() {
-      requestAnimationFrame(() => {
-        mainEl.scrollTop = mainEl.scrollHeight;
-      });
+      requestAnimationFrame(() => { mainEl.scrollTop = mainEl.scrollHeight; });
     }
 
     function renderAll() {
@@ -277,24 +242,19 @@
       for (const item of chats) {
         const row = document.createElement("div");
         row.className = "row " + item.role;
-
         const msg = document.createElement("div");
         msg.className = "msg";
-
         const bubble = document.createElement("div");
         bubble.className = "bubble";
         bubble.textContent = item.text;
-
         const meta = document.createElement("div");
         meta.className = "meta";
         meta.textContent = `${item.role === "user" ? "나" : "봇"} · ${formatTime(item.ts)}`;
-
         msg.appendChild(bubble);
         msg.appendChild(meta);
         row.appendChild(msg);
         chatEl.appendChild(row);
       }
-
       scrollToBottom();
     }
 
@@ -323,14 +283,9 @@
             conversationId
           })
         });
-
         const raw = await res.text();
-        if (!res.ok) throw new Error(`HTTP ${res.status} - ${raw}`);
-
         let data;
-        try { data = JSON.parse(raw); }
-        catch { data = { answer: raw }; }
-
+        try { data = JSON.parse(raw); } catch { data = { answer: raw }; }
         pushMessage("bot", data.answer ?? "(answer 없음)");
         statusEl.textContent = "완료";
       } catch (err) {
@@ -343,7 +298,6 @@
     }
 
     sendBtn.addEventListener("click", send);
-
     qEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -351,16 +305,6 @@
       }
     });
 
-    clearBtn.addEventListener("click", () => {
-      if (!confirm("대화 기록을 모두 삭제할까요?\n(로컬 화면 기록만 삭제됩니다)")) return;
-      chats = [];
-      localStorage.removeItem(STORAGE_KEY);
-      renderAll();
-      statusEl.textContent = "대기 중…";
-      qEl.focus();
-    });
-
-    // ✅ 최초 로드 시: 저장된 채팅 복원
     chats = loadChats();
     renderAll();
   </script>
