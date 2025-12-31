@@ -63,36 +63,36 @@
       padding: 14px 14px calc(92px + var(--safe-bottom));
     }
 
-    .chat { display: flex; flex-direction: column; gap: 10px; }
+    .chat { display: flex; flex-direction: column; gap: 14px; }
 
     .row { display: flex; width: 100%; }
     .row.user { justify-content: flex-end; }
     .row.bot { justify-content: flex-start; }
 
-    .msg { display:flex; flex-direction:column; gap:4px; max-width: 92%; }
+    .msg { display:flex; flex-direction:column; gap:4px; max-width: 85%; }
     .row.user .msg { align-items:flex-end; }
-    .row.bot  .msg { align-items:flex-start; }
+    .row.bot .msg { align-items:flex-start; }
 
     .bubble {
-      display: inline-block;
-      width: auto;
-      /* ✅ 수정 포인트 2: 말풍선 너비를 유동적으로 확장 */
-      max-width: 92%; 
-      padding: 10px 12px;
+      display: block;
+      width: fit-content;
+      /* ✅ 수정: 질문이 짧아도 답변창과 비슷하게 보이도록 최소 너비 설정 */
+      min-width: 260px; 
+      max-width: 100%; 
+      padding: 12px 16px;
       border-radius: var(--radius);
       border: 1px solid var(--bot-line);
       background: var(--bot-bg);
       white-space: pre-wrap;
-      line-height: 1.35;
+      line-height: 1.5;
       box-shadow: var(--shadow);
-      word-break: break-all; /* ✅ 한글 끊김 방지 */
-      overflow-wrap: anywhere;
+      word-break: break-all;
     }
 
     .row.user .bubble {
       background: var(--user-bg);
       border-color: var(--user-line);
-      text-align: left; /* ✅ 긴 문장일 때 왼쪽 정렬 */
+      text-align: left;
     }
 
     .meta { margin-top: 4px; font-size: 11px; color: var(--muted); }
@@ -120,12 +120,12 @@
 
     textarea {
       flex: 1;
-      min-height: 46px;
+      min-height: 48px;
       max-height: 140px;
       resize: none;
       border-radius: 14px;
       border: 1px solid var(--line);
-      padding: 12px 12px;
+      padding: 13px 14px;
       font-size: 16px;
       outline: none;
       background: #fff;
@@ -152,10 +152,7 @@
 
     @media (max-width: 480px) {
       .title { font-size: 18px; }
-      main { padding: 12px 12px calc(92px + var(--safe-bottom)); }
-      .bubble { max-width: 94%; }
-      textarea { font-size: 16px; }
-      button.send { min-width: 64px; padding: 12px 12px; }
+      .bubble { min-width: 200px; } /* 모바일 환경 고려 */
     }
   </style>
 </head>
@@ -211,32 +208,19 @@
 
     function formatTime(ts) {
       const d = new Date(ts);
-      const hh = String(d.getHours()).padStart(2, "0");
-      const mm = String(d.getMinutes()).padStart(2, "0");
-      return `${hh}:${mm}`;
+      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
 
-    function saveChats() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
-    }
-
+    function saveChats() { localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)); }
     function loadChats() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
     }
 
-    function scrollToBottom() {
-      requestAnimationFrame(() => { mainEl.scrollTop = mainEl.scrollHeight; });
-    }
+    function scrollToBottom() { requestAnimationFrame(() => { mainEl.scrollTop = mainEl.scrollHeight; }); }
 
     function renderAll() {
       chatEl.innerHTML = "";
-      if (!chats.length) {
-        emptyEl.style.display = "block";
-        return;
-      }
+      if (!chats.length) { emptyEl.style.display = "block"; return; }
       emptyEl.style.display = "none";
 
       for (const item of chats) {
@@ -277,20 +261,16 @@
         const res = await fetch(WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question,
-            userId: "web-test-user",
-            conversationId
-          })
+          body: JSON.stringify({ question, userId: "web-test-user", conversationId })
         });
         const raw = await res.text();
         let data;
         try { data = JSON.parse(raw); } catch { data = { answer: raw }; }
-        pushMessage("bot", data.answer ?? "(answer 없음)");
+        pushMessage("bot", data.answer ?? "(답변을 가져오지 못했습니다)");
         statusEl.textContent = "완료";
       } catch (err) {
-        pushMessage("bot", "에러: " + String(err.message || err));
-        statusEl.textContent = "에러 발생";
+        pushMessage("bot", "에러 발생: " + err.message);
+        statusEl.textContent = "에러";
       } finally {
         sendBtn.disabled = false;
         qEl.focus();
@@ -299,10 +279,7 @@
 
     sendBtn.addEventListener("click", send);
     qEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        send();
-      }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
     });
 
     chats = loadChats();
